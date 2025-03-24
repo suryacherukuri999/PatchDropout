@@ -68,7 +68,11 @@ ENV ENV_PREFIX $PROJECT_DIR/env
 RUN conda update --name base --channel defaults conda && \
     conda create --name PatchDropout && \
     conda clean --all --yes
-RUN conda activate PatchDropout
+
+SHELL ["conda", "run", "-n", "PatchDropout", "/bin/bash", "-c"]
+
+
+#RUN conda activate PatchDropout
 RUN conda install -c conda-forge opencv
 RUN conda install -c anaconda pip
 RUN pip install torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio==0.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html

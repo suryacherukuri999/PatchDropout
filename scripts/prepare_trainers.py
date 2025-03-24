@@ -11,7 +11,108 @@ from einops.layers.torch import Rearrange
 torch.multiprocessing.set_sharing_strategy('file_system')
 from torchviz import make_dot
 import helper
+import os
+import time
+import matplotlib.pyplot as plt
 
+class MetricsTracker:
+    def __init__(self, output_dir):
+        self.output_dir = output_dir
+        self.memory_usage = []
+        self.iteration_times = []
+        self.iterations = []
+        self.keep_rates = []
+        self.MB = 1024.0 * 1024.0
+        self.start_time = None
+        
+    def start_iteration(self):
+        """Call at the start of each iteration to record start time"""
+        self.start_time = time.time()
+        torch.cuda.reset_peak_memory_stats()  # Reset peak memory stats for this iteration
+        
+    def end_iteration(self, iteration, keep_rate):
+        """Call at the end of each iteration to record metrics"""
+        if self.start_time is None:
+            return
+            
+        # Record iteration time
+        iter_time = time.time() - self.start_time
+        self.iteration_times.append(iter_time)
+        
+        # Record memory usage
+        memory_used = torch.cuda.max_memory_allocated() / self.MB
+        self.memory_usage.append(memory_used)
+        
+        # Record iteration number and keep rate
+        self.iterations.append(iteration)
+        self.keep_rates.append(keep_rate)
+
+        print(f"Iteration {iteration} - Time: {iter_time:.4f}s, Memory: {memory_used:.2f}MB, Keep Rate: {keep_rate:.2f}")
+
+        
+        self.start_time = None
+        
+    def plot_metrics(self, epoch):
+        """Generate plots for the collected metrics"""
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+            
+        # Plot memory usage
+        plt.figure(figsize=(10, 6))
+        plt.plot(self.iterations, self.memory_usage)
+        plt.title(f'Memory Usage - Epoch {epoch}')
+        plt.xlabel('Iteration')
+        plt.ylabel('Memory Used (MB)')
+        plt.grid(True)
+        plt.savefig(os.path.join(self.output_dir, f'memory_usage_epoch_{epoch}.png'))
+        plt.close()
+        
+        # Plot iteration times
+        plt.figure(figsize=(10, 6))
+        plt.plot(self.iterations, self.iteration_times)
+        plt.title(f'Iteration Times - Epoch {epoch}')
+        plt.xlabel('Iteration')
+        plt.ylabel('Time (s)')
+        plt.grid(True)
+        plt.savefig(os.path.join(self.output_dir, f'iteration_times_epoch_{epoch}.png'))
+        plt.close()
+        
+        # Plot keep rates
+        plt.figure(figsize=(10, 6))
+        plt.plot(self.iterations, self.keep_rates)
+        plt.title(f'Keep Rates - Epoch {epoch}')
+        plt.xlabel('Iteration')
+        plt.ylabel('Keep Rate')
+        plt.ylim(0, 1.1)
+        plt.grid(True)
+        plt.savefig(os.path.join(self.output_dir, f'keep_rates_epoch_{epoch}.png'))
+        plt.close()
+        
+        # Plot memory vs keep rate scatter
+        plt.figure(figsize=(10, 6))
+        plt.scatter(self.keep_rates, self.memory_usage, alpha=0.6)
+        plt.title(f'Memory Usage vs Keep Rate - Epoch {epoch}')
+        plt.xlabel('Keep Rate')
+        plt.ylabel('Memory Used (MB)')
+        plt.grid(True)
+        plt.savefig(os.path.join(self.output_dir, f'memory_vs_keep_rate_epoch_{epoch}.png'))
+        plt.close()
+        
+        # Save metrics to CSV
+        import pandas as pd
+        df = pd.DataFrame({
+            'iteration': self.iterations,
+            'memory_mb': self.memory_usage,
+            'time_seconds': self.iteration_times,
+            'keep_rate': self.keep_rates
+        })
+        df.to_csv(os.path.join(self.output_dir, f'metrics_epoch_{epoch}.csv'), index=False)
+        
+        # Reset for next epoch
+        self.memory_usage = []
+        self.iteration_times = []
+        self.iterations = []
+        self.keep_rates = []
 
 def train_for_image_one_epoch(rank, epoch, num_epochs,
                               model, defined_loss, data_loader,
@@ -23,12 +124,17 @@ def train_for_image_one_epoch(rank, epoch, num_epochs,
     count = 0
     model.train()
 
+    metrics_output_dir = "/storage/data/surya"
+    metrics_tracker = MetricsTracker(metrics_output_dir)
+
     if rank == 0:
         print('Starting one epoch... ')
 
     for it, data in enumerate(metric_logger.log_every(iterable=data_loader, print_freq=20, header=header)):
         images = data[0]
         labels = data[1]
+        if rank == 0:
+            metrics_tracker.start_iteration()
         # Get the learning rate based on the current iteration number
         it = len(data_loader) * epoch + it  # global training iteration
         for i, param_group in enumerate(optimizer.param_groups):
@@ -88,6 +194,11 @@ def train_for_image_one_epoch(rank, epoch, num_epochs,
                 metric_logger.update(lr=optimizer.param_groups[0]["lr"])
                 metric_logger.update(wd=optimizer.param_groups[0]["weight_decay"])
                 count += 1
+        if rank == 0:
+            metrics_tracker.end_iteration(it, keep_rate)
+
+    if rank == 0:
+        metrics_tracker.plot_metrics(epoch)
 
     # Gather the stats from all processes
     metric_logger.synchronize_between_processes()

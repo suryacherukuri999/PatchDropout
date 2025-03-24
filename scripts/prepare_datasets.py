@@ -339,7 +339,7 @@ class GetPublicDatasets():
                 original_train_dataset = datasets.CIFAR100(
                     root=self.dataset_params['data_folder'],
                     train=True,
-                    download=False,
+                    download=True,
                     transform=None)
 
                 num_train = len(original_train_dataset)
@@ -359,7 +359,7 @@ class GetPublicDatasets():
                 dataset = datasets.CIFAR100(
                     root=self.dataset_params['data_folder'],
                     train=False,
-                    download=False,
+                    download=True,
                     transform=torchvision.transforms.Compose([self.transforms_plain, self.normalize]))
                 dataset = ReturnIndexDataset(dataset, transform=None)
                 return dataset
@@ -378,7 +378,7 @@ class GetPublicDatasets():
                 original_train_dataset = datasets.Places365(root=os.path.join(self.dataset_params['data_folder'], 'places365/'),
                                                             split='train-standard',
                                                             small=True,
-                                                            download=False,
+                                                            download=True,
                                                             transform=None)
 
                 num_train = len(original_train_dataset)
