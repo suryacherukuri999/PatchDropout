@@ -29,5 +29,5 @@
                                   "label_smoothing": 0.1,
                                   "input_type": { "name": "SampledTokens", # "AllTokens" or "SampledTokens"
                                                   "SampledTokens": { "keep_rate": 0.5,
-                                                                     "random_keep_rate": True} },}, },
+                                                                     "random_keep_rate": False} },}, },
 }

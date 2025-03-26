@@ -49,8 +49,34 @@ class MetricsTracker:
 
         print(f"Iteration {iteration} - Time: {iter_time:.4f}s, Memory: {memory_used:.2f}MB, Keep Rate: {keep_rate:.2f}")
 
+        # Save metrics to CSV after each iteration to ensure data is not lost
+        self.save_metrics_to_csv(iteration)
         
         self.start_time = None
+        
+    def save_metrics_to_csv(self, current_iteration):
+        """Save metrics to CSV file after each iteration"""
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+            
+        # Create a DataFrame with just the latest metrics
+        import pandas as pd
+        latest_df = pd.DataFrame({
+            'iteration': [self.iterations[-1]],
+            'memory_mb': [self.memory_usage[-1]],
+            'time_seconds': [self.iteration_times[-1]],
+            'keep_rate': [self.keep_rates[-1]]
+        })
+        
+        # Define the CSV file path
+        csv_path = os.path.join(self.output_dir, f'metrics_realtime.csv')
+        
+        # If file doesn't exist, create it with header
+        # If it exists, append without header
+        if not os.path.exists(csv_path):
+            latest_df.to_csv(csv_path, index=False)
+        else:
+            latest_df.to_csv(csv_path, mode='a', header=False, index=False)
         
     def plot_metrics(self, epoch):
         """Generate plots for the collected metrics"""
@@ -63,6 +89,8 @@ class MetricsTracker:
         plt.title(f'Memory Usage - Epoch {epoch}')
         plt.xlabel('Iteration')
         plt.ylabel('Memory Used (MB)')
+        plt.xlim(0, max(self.iterations) if self.iterations else 100)  # Start x-axis from 0
+        plt.ylim(0, max(self.memory_usage) * 1.1 if self.memory_usage else 1000)  # Start y-axis from 0
         plt.grid(True)
         plt.savefig(os.path.join(self.output_dir, f'memory_usage_epoch_{epoch}.png'))
         plt.close()
@@ -73,6 +101,8 @@ class MetricsTracker:
         plt.title(f'Iteration Times - Epoch {epoch}')
         plt.xlabel('Iteration')
         plt.ylabel('Time (s)')
+        plt.xlim(0, max(self.iterations) if self.iterations else 100)  # Start x-axis from 0
+        plt.ylim(0, max(self.iteration_times) * 1.1 if self.iteration_times else 10)  # Start y-axis from 0
         plt.grid(True)
         plt.savefig(os.path.join(self.output_dir, f'iteration_times_epoch_{epoch}.png'))
         plt.close()
@@ -83,7 +113,8 @@ class MetricsTracker:
         plt.title(f'Keep Rates - Epoch {epoch}')
         plt.xlabel('Iteration')
         plt.ylabel('Keep Rate')
-        plt.ylim(0, 1.1)
+        plt.xlim(0, max(self.iterations) if self.iterations else 100)  # Start x-axis from 0
+        plt.ylim(0, 1.1)  # Keep rate is between 0 and 1
         plt.grid(True)
         plt.savefig(os.path.join(self.output_dir, f'keep_rates_epoch_{epoch}.png'))
         plt.close()
@@ -94,11 +125,13 @@ class MetricsTracker:
         plt.title(f'Memory Usage vs Keep Rate - Epoch {epoch}')
         plt.xlabel('Keep Rate')
         plt.ylabel('Memory Used (MB)')
+        plt.xlim(0, 1.1)  # Keep rate is between 0 and 1
+        plt.ylim(0, max(self.memory_usage) * 1.1 if self.memory_usage else 1000)  # Start y-axis from 0
         plt.grid(True)
         plt.savefig(os.path.join(self.output_dir, f'memory_vs_keep_rate_epoch_{epoch}.png'))
         plt.close()
         
-        # Save metrics to CSV
+        # Save all metrics to epoch-specific CSV
         import pandas as pd
         df = pd.DataFrame({
             'iteration': self.iterations,
@@ -124,7 +157,7 @@ def train_for_image_one_epoch(rank, epoch, num_epochs,
     count = 0
     model.train()
 
-    metrics_output_dir = "/storage/data/surya"
+    metrics_output_dir = "/storage/data/sai"
     metrics_tracker = MetricsTracker(metrics_output_dir)
 
     if rank == 0:
