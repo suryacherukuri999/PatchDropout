@@ -1,4 +1,7 @@
 import torch
+print(f'suryaaaaaaaaaaaa - rank: {torch.distributed.get_rank() if torch.distributed.is_initialized() else "not initialized"}')
+print(torch.version.__version__)
+
 
 class PatchDropout(torch.nn.Module):
     """ 

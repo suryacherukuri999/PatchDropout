@@ -14,6 +14,7 @@ import helper
 import os
 import time
 import matplotlib.pyplot as plt
+import subprocess
 
 class MetricsTracker:
     def __init__(self, output_dir):
@@ -28,7 +29,8 @@ class MetricsTracker:
     def start_iteration(self):
         """Call at the start of each iteration to record start time"""
         self.start_time = time.time()
-        torch.cuda.reset_peak_memory_stats()  # Reset peak memory stats for this iteration
+        #torch.cuda.reset_peak_memory_stats()  # Reset peak memory stats for this iteration
+        torch.cuda.empty_cache()
         
     def end_iteration(self, iteration, keep_rate):
         """Call at the end of each iteration to record metrics"""
@@ -40,7 +42,18 @@ class MetricsTracker:
         self.iteration_times.append(iter_time)
         
         # Record memory usage
-        memory_used = torch.cuda.max_memory_allocated() / self.MB
+        #memory_used = torch.cuda.max_memory_allocated(0) / self.MB
+        try:
+            result = subprocess.check_output(
+                ['nvidia-smi', '--query-gpu=memory.used', '--format=csv,nounits,noheader'],
+                encoding='utf-8')
+            # Parse the output to get the memory used for GPU 1
+            memory_values = [int(x) for x in result.strip().split('\n')]
+            memory_used = memory_values[1] if len(memory_values) > 1 else memory_values[0]  # Use GPU 1 if available
+        except (subprocess.SubprocessError, IndexError) as e:
+            print(f"Error getting GPU memory: {e}")
+            memory_used = 0
+
         self.memory_usage.append(memory_used)
         
         # Record iteration number and keep rate
@@ -166,8 +179,7 @@ def train_for_image_one_epoch(rank, epoch, num_epochs,
     for it, data in enumerate(metric_logger.log_every(iterable=data_loader, print_freq=20, header=header)):
         images = data[0]
         labels = data[1]
-        if rank == 0:
-            metrics_tracker.start_iteration()
+        
         # Get the learning rate based on the current iteration number
         it = len(data_loader) * epoch + it  # global training iteration
         for i, param_group in enumerate(optimizer.param_groups):
@@ -178,11 +190,17 @@ def train_for_image_one_epoch(rank, epoch, num_epochs,
         labels = labels.type(torch.LongTensor)  # <---- Here (casting)
         labels = labels.to(device, non_blocking=True)
 
+        if rank == 0:
+            metrics_tracker.start_iteration()
+
         # Model forward passes + compute the loss
         fp16_scaler = None
         with torch.cuda.amp.autocast(fp16_scaler is not None):
             x,keep_rate = model(rank, images, keep_rate, random_keep_rate)  # x: logits right after the fc layer
             loss = defined_loss['classification_loss'](x, labels)
+
+        if rank == 0:
+            metrics_tracker.end_iteration(it, keep_rate)
 
         if not math.isfinite(loss.item()):
             print("Loss is {}, stopping training".format(loss.item()), force=True)
@@ -227,8 +245,6 @@ def train_for_image_one_epoch(rank, epoch, num_epochs,
                 metric_logger.update(lr=optimizer.param_groups[0]["lr"])
                 metric_logger.update(wd=optimizer.param_groups[0]["weight_decay"])
                 count += 1
-        if rank == 0:
-            metrics_tracker.end_iteration(it, keep_rate)
 
     if rank == 0:
         metrics_tracker.plot_metrics(epoch)
