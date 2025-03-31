@@ -32,43 +32,43 @@ def _cfg(url='', **kwargs):
 default_cfgs = {
     # patch models (my experiments)
     'swin_base_patch4_window12_384': _cfg(
-        url='https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window12_384_22kto1k.pth',
+        url='https://github.com/SwinTransformer/home/saisurya/releases/download/v1.0.0/swin_base_patch4_window12_384_22kto1k.pth',
         input_size=(3, 384, 384), crop_pct=1.0),
 
     'swin_base_patch4_window7_224': _cfg(
-        url='https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window7_224_22kto1k.pth',
+        url='https://github.com/SwinTransformer/home/saisurya/releases/download/v1.0.0/swin_base_patch4_window7_224_22kto1k.pth',
     ),
 
     'swin_large_patch4_window12_384': _cfg(
-        url='https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22kto1k.pth',
+        url='https://github.com/SwinTransformer/home/saisurya/releases/download/v1.0.0/swin_large_patch4_window12_384_22kto1k.pth',
         input_size=(3, 384, 384), crop_pct=1.0),
 
     'swin_large_patch4_window7_224': _cfg(
-        url='https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window7_224_22kto1k.pth',
+        url='https://github.com/SwinTransformer/home/saisurya/releases/download/v1.0.0/swin_large_patch4_window7_224_22kto1k.pth',
     ),
 
     'swin_small_patch4_window7_224': _cfg(
-        url='https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_small_patch4_window7_224.pth',
+        url='https://github.com/SwinTransformer/home/saisurya/releases/download/v1.0.0/swin_small_patch4_window7_224.pth',
     ),
 
     'swin_tiny_patch4_window7_224': _cfg(
-        url='https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_tiny_patch4_window7_224.pth',
+        url='https://github.com/SwinTransformer/home/saisurya/releases/download/v1.0.0/swin_tiny_patch4_window7_224.pth',
     ),
 
     'swin_base_patch4_window12_384_in22k': _cfg(
-        url='https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window12_384_22k.pth',
+        url='https://github.com/SwinTransformer/home/saisurya/releases/download/v1.0.0/swin_base_patch4_window12_384_22k.pth',
         input_size=(3, 384, 384), crop_pct=1.0, num_classes=21841),
 
     'swin_base_patch4_window7_224_in22k': _cfg(
-        url='https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window7_224_22k.pth',
+        url='https://github.com/SwinTransformer/home/saisurya/releases/download/v1.0.0/swin_base_patch4_window7_224_22k.pth',
         num_classes=21841),
 
     'swin_large_patch4_window12_384_in22k': _cfg(
-        url='https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth',
+        url='https://github.com/SwinTransformer/home/saisurya/releases/download/v1.0.0/swin_large_patch4_window12_384_22k.pth',
         input_size=(3, 384, 384), crop_pct=1.0, num_classes=21841),
 
     'swin_large_patch4_window7_224_in22k': _cfg(
-        url='https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window7_224_22k.pth',
+        url='https://github.com/SwinTransformer/home/saisurya/releases/download/v1.0.0/swin_large_patch4_window7_224_22k.pth',
         num_classes=21841),
 
 }

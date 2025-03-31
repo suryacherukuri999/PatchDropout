@@ -216,42 +216,42 @@ def _cfg(url='', **kwargs):
 default_cfgs = {
     # patch models (weights from official Google JAX impl)
     'vit_tiny_patch16_224': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/'
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/'
             'Ti_16-i21k-300ep-lr_0.001-aug_none-wd_0.03-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.03-res_224.npz'),
     'vit_tiny_patch16_384': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/'
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/'
             'Ti_16-i21k-300ep-lr_0.001-aug_none-wd_0.03-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.03-res_384.npz',
         input_size=(3, 384, 384), crop_pct=1.0),
     'vit_small_patch32_224': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/'
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/'
             'S_32-i21k-300ep-lr_0.001-aug_light1-wd_0.03-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.03-res_224.npz'),
     'vit_small_patch32_384': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/'
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/'
             'S_32-i21k-300ep-lr_0.001-aug_light1-wd_0.03-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.03-res_384.npz',
         input_size=(3, 384, 384), crop_pct=1.0),
     'vit_small_patch16_224': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/'
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/'
             'S_16-i21k-300ep-lr_0.001-aug_light1-wd_0.03-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.03-res_224.npz'),
     'vit_small_patch16_384': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/'
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/'
             'S_16-i21k-300ep-lr_0.001-aug_light1-wd_0.03-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.03-res_384.npz',
         input_size=(3, 384, 384), crop_pct=1.0),
     'vit_base_patch32_224': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/'
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/'
             'B_32-i21k-300ep-lr_0.001-aug_medium1-wd_0.03-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.03-res_224.npz'),
     'vit_base_patch32_384': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/'
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/'
             'B_32-i21k-300ep-lr_0.001-aug_light1-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.03-res_384.npz',
         input_size=(3, 384, 384), crop_pct=1.0),
     'vit_base_patch16_224': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/'
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/'
             'B_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.01-res_224.npz'),
     'vit_base_patch16_384': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/'
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/'
             'B_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.01-res_384.npz',
         input_size=(3, 384, 384), crop_pct=1.0),
     'vit_base_patch8_224': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/'
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/'
             'B_8-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0--imagenet2012-steps_20k-lr_0.01-res_224.npz'),
     'vit_large_patch32_224': _cfg(
         url='',  # no official model weights for this combo, only for in21k
@@ -260,10 +260,10 @@ default_cfgs = {
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_large_p32_384-9b920ba8.pth',
         input_size=(3, 384, 384), crop_pct=1.0),
     'vit_large_patch16_224': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/'
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/'
             'L_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.1-sd_0.1--imagenet2012-steps_20k-lr_0.01-res_224.npz'),
     'vit_large_patch16_384': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/'
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/'
             'L_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.1-sd_0.1--imagenet2012-steps_20k-lr_0.01-res_384.npz',
         input_size=(3, 384, 384), crop_pct=1.0),
 
@@ -275,46 +275,46 @@ default_cfgs = {
 
     # patch models, imagenet21k (weights from official Google JAX impl)
     'vit_cifar100': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/Ti_16-i21k-300ep-lr_0.001-aug_none-wd_0.03-do_0.0-sd_0.0.npz',
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/Ti_16-i21k-300ep-lr_0.001-aug_none-wd_0.03-do_0.0-sd_0.0.npz',
         num_classes=21843),
     'vit_tiny_patch16_224_in21k': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/Ti_16-i21k-300ep-lr_0.001-aug_none-wd_0.03-do_0.0-sd_0.0.npz',
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/Ti_16-i21k-300ep-lr_0.001-aug_none-wd_0.03-do_0.0-sd_0.0.npz',
         num_classes=21843),
     'vit_small_patch32_224_in21k': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/S_32-i21k-300ep-lr_0.001-aug_light1-wd_0.03-do_0.0-sd_0.0.npz',
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/S_32-i21k-300ep-lr_0.001-aug_light1-wd_0.03-do_0.0-sd_0.0.npz',
         num_classes=21843),
     'vit_small_patch16_224_in21k': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/S_16-i21k-300ep-lr_0.001-aug_light1-wd_0.03-do_0.0-sd_0.0.npz',
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/S_16-i21k-300ep-lr_0.001-aug_light1-wd_0.03-do_0.0-sd_0.0.npz',
         num_classes=21843),
     'vit_base_patch32_224_in21k': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/B_32-i21k-300ep-lr_0.001-aug_medium1-wd_0.03-do_0.0-sd_0.0.npz',
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/B_32-i21k-300ep-lr_0.001-aug_medium1-wd_0.03-do_0.0-sd_0.0.npz',
         num_classes=21843),
     'vit_base_patch16_224_in21k': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/B_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0.npz',
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/B_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0.npz',
         num_classes=21843),
     'vit_base_patch8_224_in21k': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/B_8-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0.npz',
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/B_8-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.0-sd_0.0.npz',
         num_classes=21843),
     'vit_large_patch32_224_in21k': _cfg(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-vitjx/jx_vit_large_patch32_224_in21k-9046d2e7.pth',
         num_classes=21843),
     'vit_large_patch16_224_in21k': _cfg(
-        url='https://storage.googleapis.com/vit_models/augreg/L_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.1-sd_0.1.npz',
+        url='https://home/saisurya.googleapis.com/vit_models/augreg/L_16-i21k-300ep-lr_0.001-aug_medium1-wd_0.1-do_0.1-sd_0.1.npz',
         num_classes=21843),
     'vit_huge_patch14_224_in21k': _cfg(
-        url='https://storage.googleapis.com/vit_models/imagenet21k/ViT-H_14.npz',
+        url='https://home/saisurya.googleapis.com/vit_models/imagenet21k/ViT-H_14.npz',
         hf_hub='timm/vit_huge_patch14_224_in21k',
         num_classes=21843),
     'vit_huge_patch16_224_in21k': _cfg(
-        url='https://storage.googleapis.com/vit_models/imagenet21k/ViT-H_14.npz',
+        url='https://home/saisurya.googleapis.com/vit_models/imagenet21k/ViT-H_14.npz',
         hf_hub='timm/vit_huge_patch16_224_in21k',
         num_classes=21843),
 
     # SAM trained models (https://arxiv.org/abs/2106.01548)
     'vit_base_patch32_224_sam': _cfg(
-        url='https://storage.googleapis.com/vit_models/sam/ViT-B_32.npz'),
+        url='https://home/saisurya.googleapis.com/vit_models/sam/ViT-B_32.npz'),
     'vit_base_patch16_224_sam': _cfg(
-        url='https://storage.googleapis.com/vit_models/sam/ViT-B_16.npz'),
+        url='https://home/saisurya.googleapis.com/vit_models/sam/ViT-B_16.npz'),
 
     # DINO pretrained - https://arxiv.org/abs/2104.14294 (no classifier head, for fine-tune only)
     'vit_small_patch16_224_dino': _cfg(

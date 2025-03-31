@@ -1,9 +1,9 @@
 {
   "mode": "train",
-  "dataset_params": { "data_folder": "/storage/data/",
+  "dataset_params": { "data_folder": "/home/saisurya/data/",
                       "dataset_name": "CIFAR100",
                       "resolution": 224, },
-  "save_params": { "output_dir": "/storage/models/",
+  "save_params": { "output_dir": "/home/saisurya/models/",
                    "saveckp_freq": 1 },
   "dataloader_params": { "trainloader":{ "batch_size": 32,
                                          "accum_iter": 1,
@@ -17,9 +17,9 @@
                                         "drop_last": False} },
   "model_params": { "backbone_option":  'vit_base_patch16_224_in21k'}, #'vit_base_patch16_224_in21k', 'swin_base_patch4_window7_224_in22k'
   "system_params": { "num_gpus": 1,
-                     "gpu_ids": "0",
+                     "gpu_ids": "1",
                      "random_seed": 0,},
-  "training_params": { "train": { "num_epochs": 10,
+  "training_params": { "train": { "num_epochs": 2,
                                   "val_freq": 1,
                                   "optimizer": { "name": 'sgd',
                                                  "adamw": { "lr": 0.00001, "momentum": [ 0.9, 0.999 ] , "warmup_epochs": 2, "step_epoch": 400 },

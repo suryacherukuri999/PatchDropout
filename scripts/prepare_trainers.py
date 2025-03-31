@@ -157,7 +157,7 @@ def train_for_image_one_epoch(rank, epoch, num_epochs,
     count = 0
     model.train()
 
-    metrics_output_dir = "/storage/data/surya_var_10"
+    metrics_output_dir = "/home/saisurya/data/surya_var_10"
     metrics_tracker = MetricsTracker(metrics_output_dir)
 
     if rank == 0:
