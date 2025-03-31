@@ -133,14 +133,24 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         x = torch.cat((cls_token, patch_embeddings), dim=1)
 
         # Random keep rate if random_keep_rate is True
+        # if random_keep_rate:
+        #     start_mask_ratio = 0.0
+        #     end_mask_ratio = 0.5
+        #     if random.random() < 0.5:
+        #         random_mask_ratio = random.randint(int(start_mask_ratio*20), int(end_mask_ratio*20))/20
+        #         keep_rate = 1 - random_mask_ratio
+        #     else:
+        #         keep_rate = 1
         if random_keep_rate:
-            start_mask_ratio = 0.0
-            end_mask_ratio = 0.5
-            if random.random() < 0.5:
-                random_mask_ratio = random.randint(int(start_mask_ratio*20), int(end_mask_ratio*20))/20
-                keep_rate = 1 - random_mask_ratio
+            if random.random() < 0.3:
+                keep_rate = 1.0
             else:
-                keep_rate = 1
+                min_keep_rate = 0.5
+                max_keep_rate = 1.0
+                
+                keep_rate = min_keep_rate + (max_keep_rate - min_keep_rate) * random.random()
+                
+                keep_rate = round(keep_rate, 2)
 
         # PatchDropout
         x = PatchDropout(keep_rate)(x, force_drop=True)
@@ -148,14 +158,14 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         x = self.pos_drop(x)  # always drop (if planned) before blocks
         x = self.blocks(x)
         x = self.norm(x)
-        return x
+        return x,keep_rate
 
     def forward(self, rank, x, keep_rate, random_keep_rate):
-        x = self.forward_features(x, keep_rate, random_keep_rate)
+        x,keep_rate = self.forward_features(x, keep_rate, random_keep_rate)
         x = self.pre_logits(x[:, 0])
         x = self.head(x)
 
-        return x
+        return x,keep_rate
 
 def _init_vit_weights(module: nn.Module, name: str = '', head_bias: float = 0., jax_impl: bool = False):
     """ ViT weight initialization

@@ -39,7 +39,7 @@ def public_validate_network(rank, val_dataloader, model, dataset_params, keep_ra
 
         # Forward
         with torch.no_grad():
-            output = model(rank, images, keep_rate, random_keep_rate)
+            output,_ = model(rank, images, keep_rate, random_keep_rate)
             if isinstance(output, list):
                 for index in range(len(output)):
                     output[index] = torch.nn.functional.log_softmax(output[index], dim=1)

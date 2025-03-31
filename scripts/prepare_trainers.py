@@ -157,7 +157,7 @@ def train_for_image_one_epoch(rank, epoch, num_epochs,
     count = 0
     model.train()
 
-    metrics_output_dir = "/storage/data/sai"
+    metrics_output_dir = "/storage/data/surya_var_10"
     metrics_tracker = MetricsTracker(metrics_output_dir)
 
     if rank == 0:
@@ -181,7 +181,7 @@ def train_for_image_one_epoch(rank, epoch, num_epochs,
         # Model forward passes + compute the loss
         fp16_scaler = None
         with torch.cuda.amp.autocast(fp16_scaler is not None):
-            x = model(rank, images, keep_rate, random_keep_rate)  # x: logits right after the fc layer
+            x,keep_rate = model(rank, images, keep_rate, random_keep_rate)  # x: logits right after the fc layer
             loss = defined_loss['classification_loss'](x, labels)
 
         if not math.isfinite(loss.item()):
