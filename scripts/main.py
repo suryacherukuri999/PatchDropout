@@ -38,6 +38,81 @@ import warnings
 warnings.filterwarnings("ignore")
 torch.autograd.set_detect_anomaly(True)
 
+def count_model_parameters_breakdown(model):
+    """
+    Calculate detailed statistics about model parameters including
+    separate counts for weights and biases, and memory usage.
+    
+    Args:
+        model: PyTorch model (can be wrapped in DDP)
+    
+    Returns:
+        dict: Parameter statistics including counts and memory usage
+    """
+    # Check if model is wrapped in DDP
+    if isinstance(model, nn.parallel.DistributedDataParallel):
+        model = model.module
+    
+    total_params = 0
+    weight_params = 0
+    bias_params = 0
+    other_params = 0
+    
+    # Print a header for the table
+    print(f"{'Layer':<40} {'Shape':<25} {'Parameters':<12} {'Type':<8}")
+    print("-" * 85)
+    
+    # Iterate through each named parameter
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad:
+            continue  # Skip frozen parameters
+            
+        params = parameter.numel()  # Number of elements in the parameter tensor
+        shape_str = str(list(parameter.shape))
+        
+        # Determine parameter type
+        if 'weight' in name:
+            param_type = 'Weight'
+            weight_params += params
+        elif 'bias' in name:
+            param_type = 'Bias'
+            bias_params += params
+        else:
+            param_type = 'Other'
+            other_params += params
+            
+        print(f"{name:<40} {shape_str:<25} {params:<12,} {param_type:<8}")
+        total_params += params
+    
+    # Calculate memory size (assuming 4 bytes per parameter for float32)
+    bytes_per_param = 4  # float32 size
+    total_memory = total_params * bytes_per_param
+    total_memory_mb = total_memory / (1024 * 1024)
+    weight_memory_mb = weight_params * bytes_per_param / (1024 * 1024)
+    bias_memory_mb = bias_params * bytes_per_param / (1024 * 1024)
+    
+    # Print summary
+    print("\nSUMMARY:")
+    print("-" * 85)
+    print(f"Total parameters:    {total_params:,}")
+    print(f"Weight parameters:   {weight_params:,} ({weight_params/total_params*100:.2f}%)")
+    print(f"Bias parameters:     {bias_params:,} ({bias_params/total_params*100:.2f}%)")
+    print(f"Other parameters:    {other_params:,} ({other_params/total_params*100:.2f}%)")
+    print(f"Memory usage:        {total_memory:,} bytes")
+    print(f"                     {total_memory / 1024:,.2f} KB")
+    print(f"                     {total_memory_mb:.2f} MB")
+    print(f"Weight memory:       {weight_memory_mb:.2f} MB ({weight_memory_mb/total_memory_mb*100:.2f}%)")
+    print(f"Bias memory:         {bias_memory_mb:.2f} MB ({bias_memory_mb/total_memory_mb*100:.2f}%)")
+    
+    return {
+        'total_params': total_params,
+        'weight_params': weight_params,
+        'bias_params': bias_params,
+        'other_params': other_params,
+        'total_memory_mb': total_memory_mb,
+        'weight_memory_mb': weight_memory_mb,
+        'bias_memory_mb': bias_memory_mb
+    }
 
 def prepare_args(dataset_params_path, default_params_path=None):
     # Load default params
@@ -179,6 +254,8 @@ def get_model_loss(rank):
 
     # Log the number of trainable parameters in Tensorboard
     if rank == 0:
+        param_stats = count_model_parameters_breakdown(model)
+        print(f"TOTAL MODEL SIZE: {param_stats['total_memory_mb']:.2f} MB")
         n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print('Number of trainable params in the model:', n_parameters, end='\n\n')
 

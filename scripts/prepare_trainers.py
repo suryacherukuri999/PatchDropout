@@ -20,6 +20,7 @@ class MetricsTracker:
     def __init__(self, output_dir):
         self.output_dir = output_dir
         self.memory_usage = []
+        self.cpu_memory_usage = []  # Added for CPU memory tracking
         self.iteration_times = []
         self.iterations = []
         self.keep_rates = []
@@ -41,8 +42,7 @@ class MetricsTracker:
         iter_time = time.time() - self.start_time
         self.iteration_times.append(iter_time)
         
-        # Record memory usage
-        #memory_used = torch.cuda.max_memory_allocated(0) / self.MB
+        # Record GPU memory usage
         try:
             result = subprocess.check_output(
                 ['nvidia-smi', '--query-gpu=memory.used', '--format=csv,nounits,noheader'],
@@ -56,11 +56,30 @@ class MetricsTracker:
 
         self.memory_usage.append(memory_used)
         
+        # Record CPU memory usage - fixed implementation
+        try:
+            # Get process ID of our Python process
+            import os
+            pid = os.getpid()
+            print("surya process" + str(pid))
+            # The '=' after 'rss' ensures that no header is printed.
+            result = subprocess.check_output(
+                ['ps', '-p', str(pid), '-o', 'rss='],
+                encoding='utf-8')
+            mem_kb = float(result.strip())
+            cpu_memory_used = mem_kb / 1024.0  # Convert from KB to MB
+            
+        except (subprocess.SubprocessError, ValueError, IndexError) as e:
+            print(f"Error getting CPU memory: {e}")
+            cpu_memory_used = 0
+            
+        self.cpu_memory_usage.append(cpu_memory_used)
+        
         # Record iteration number and keep rate
         self.iterations.append(iteration)
         self.keep_rates.append(keep_rate)
 
-        print(f"Iteration {iteration} - Time: {iter_time:.4f}s, Memory: {memory_used:.2f}MB, Keep Rate: {keep_rate:.2f}")
+        print(f"Iteration {iteration} - Time: {iter_time:.4f}s, GPU Memory: {memory_used:.2f}MB, CPU Memory: {cpu_memory_used:.2f}MB, Keep Rate: {keep_rate:.2f}")
 
         # Save metrics to CSV after each iteration to ensure data is not lost
         self.save_metrics_to_csv(iteration)
@@ -76,7 +95,8 @@ class MetricsTracker:
         import pandas as pd
         latest_df = pd.DataFrame({
             'iteration': [self.iterations[-1]],
-            'memory_mb': [self.memory_usage[-1]],
+            'gpu_memory_mb': [self.memory_usage[-1]],
+            'cpu_memory_mb': [self.cpu_memory_usage[-1]],  
             'time_seconds': [self.iteration_times[-1]],
             'keep_rate': [self.keep_rates[-1]]
         })
@@ -96,16 +116,28 @@ class MetricsTracker:
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
             
-        # Plot memory usage
+        # Plot GPU memory usage
         plt.figure(figsize=(10, 6))
         plt.plot(self.iterations, self.memory_usage)
-        plt.title(f'Memory Usage - Epoch {epoch}')
+        plt.title(f'GPU Memory Usage - Epoch {epoch}')
         plt.xlabel('Iteration')
-        plt.ylabel('Memory Used (MB)')
+        plt.ylabel('GPU Memory Used (MB)')
         plt.xlim(0, max(self.iterations) if self.iterations else 100)  # Start x-axis from 0
         plt.ylim(0, max(self.memory_usage) * 1.1 if self.memory_usage else 1000)  # Start y-axis from 0
         plt.grid(True)
-        plt.savefig(os.path.join(self.output_dir, f'memory_usage_epoch_{epoch}.png'))
+        plt.savefig(os.path.join(self.output_dir, f'gpu_memory_usage_epoch_{epoch}.png'))
+        plt.close()
+        
+        # Plot CPU memory usage
+        plt.figure(figsize=(10, 6))
+        plt.plot(self.iterations, self.cpu_memory_usage)
+        plt.title(f'CPU Memory Usage - Epoch {epoch}')
+        plt.xlabel('Iteration')
+        plt.ylabel('CPU Memory Used (MB)')
+        plt.xlim(0, max(self.iterations) if self.iterations else 100)  # Start x-axis from 0
+        plt.ylim(0, max(self.cpu_memory_usage) * 1.1 if self.cpu_memory_usage else 1000)  # Start y-axis from 0
+        plt.grid(True)
+        plt.savefig(os.path.join(self.output_dir, f'cpu_memory_usage_epoch_{epoch}.png'))
         plt.close()
         
         # Plot iteration times
@@ -132,23 +164,36 @@ class MetricsTracker:
         plt.savefig(os.path.join(self.output_dir, f'keep_rates_epoch_{epoch}.png'))
         plt.close()
         
-        # Plot memory vs keep rate scatter
+        # Plot memory vs keep rate scatter for GPU
         plt.figure(figsize=(10, 6))
         plt.scatter(self.keep_rates, self.memory_usage, alpha=0.6)
-        plt.title(f'Memory Usage vs Keep Rate - Epoch {epoch}')
+        plt.title(f'GPU Memory Usage vs Keep Rate - Epoch {epoch}')
         plt.xlabel('Keep Rate')
-        plt.ylabel('Memory Used (MB)')
+        plt.ylabel('GPU Memory Used (MB)')
         plt.xlim(0, 1.1)  # Keep rate is between 0 and 1
         plt.ylim(0, max(self.memory_usage) * 1.1 if self.memory_usage else 1000)  # Start y-axis from 0
         plt.grid(True)
-        plt.savefig(os.path.join(self.output_dir, f'memory_vs_keep_rate_epoch_{epoch}.png'))
+        plt.savefig(os.path.join(self.output_dir, f'gpu_memory_vs_keep_rate_epoch_{epoch}.png'))
+        plt.close()
+        
+        # Plot memory vs keep rate scatter for CPU
+        plt.figure(figsize=(10, 6))
+        plt.scatter(self.keep_rates, self.cpu_memory_usage, alpha=0.6)
+        plt.title(f'CPU Memory Usage vs Keep Rate - Epoch {epoch}')
+        plt.xlabel('Keep Rate')
+        plt.ylabel('CPU Memory Used (MB)')
+        plt.xlim(0, 1.1)  # Keep rate is between 0 and 1
+        plt.ylim(0, max(self.cpu_memory_usage) * 1.1 if self.cpu_memory_usage else 1000)  # Start y-axis from 0
+        plt.grid(True)
+        plt.savefig(os.path.join(self.output_dir, f'cpu_memory_vs_keep_rate_epoch_{epoch}.png'))
         plt.close()
         
         # Save all metrics to epoch-specific CSV
         import pandas as pd
         df = pd.DataFrame({
             'iteration': self.iterations,
-            'memory_mb': self.memory_usage,
+            'gpu_memory_mb': self.memory_usage,
+            'cpu_memory_mb': self.cpu_memory_usage,
             'time_seconds': self.iteration_times,
             'keep_rate': self.keep_rates
         })
@@ -156,6 +201,7 @@ class MetricsTracker:
         
         # Reset for next epoch
         self.memory_usage = []
+        self.cpu_memory_usage = []
         self.iteration_times = []
         self.iterations = []
         self.keep_rates = []
@@ -170,7 +216,7 @@ def train_for_image_one_epoch(rank, epoch, num_epochs,
     count = 0
     model.train()
 
-    metrics_output_dir = "/home/saisurya/data/surya_var_10"
+    metrics_output_dir = "/home/saisurya/data/surya_varrate_variable"
     metrics_tracker = MetricsTracker(metrics_output_dir)
 
     if rank == 0:

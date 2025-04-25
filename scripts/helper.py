@@ -280,7 +280,7 @@ def restart_from_checkpoint(ckp_path, run_variables=None, **kwargs):
     print("Found checkpoint at {}".format(ckp_path))
 
     # open checkpoint file
-    checkpoint = torch.load(ckp_path, map_location="cpu",weights_only=False)
+    checkpoint = torch.load(ckp_path, map_location="cpu")
 
     # key is what to look for in the checkpoint file
     # value is the object to load
@@ -742,19 +742,28 @@ def launch(main_func, args=()):
     os.environ["CUDA_VISIBLE_DEVICES"] = args['system_params']['gpu_ids']
 
     world_size = args['system_params']['num_gpus']
-    port = get_open_port()
-    dist_url = f"tcp://127.0.0.1:{port}"
-    # os.environ[
-    #     "TORCH_DISTRIBUTED_DEBUG"
-    # ] = "INFO"
-    os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
-    mp.spawn(
-        run_distributed_workers,
-        nprocs=world_size,
-        args=(main_func, world_size, dist_url, args),
-        daemon=False,
-    )
+    if(world_size==-1121):
+        torch.cuda.set_device(0)
+    # print('| distributed init (rank {}): {}'.format(
+    #     rank, dist_url), flush=True)
+
+        main_func(rank, args)
+
+    else:
+        port = get_open_port()
+        dist_url = f"tcp://127.0.0.1:{port}"
+        # os.environ[
+        #     "TORCH_DISTRIBUTED_DEBUG"
+        # ] = "INFO"
+        os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+
+        mp.spawn(
+            run_distributed_workers,
+            nprocs=world_size,
+            args=(main_func, world_size, dist_url, args),
+            daemon=False,
+        )
 
 def has_batchnorms(model):
     bn_types = (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d, nn.SyncBatchNorm)

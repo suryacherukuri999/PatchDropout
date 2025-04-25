@@ -2,6 +2,15 @@ import torch
 print(f'suryaaaaaaaaaaaa - rank: {torch.distributed.get_rank() if torch.distributed.is_initialized() else "not initialized"}')
 print(torch.version.__version__)
 
+# import traceback
+
+# if not hasattr(torch, '_patchdropout_import_count'):
+#     torch._patchdropout_import_count = 0
+
+# torch._patchdropout_import_count += 1
+# print(f"Import #{torch._patchdropout_import_count} of patchdropout.py")
+# traceback.print_stack()  # This shows the import stack trace
+
 
 class PatchDropout(torch.nn.Module):
     """ 
