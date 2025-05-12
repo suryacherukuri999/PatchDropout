@@ -63,6 +63,7 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         self.patch_size = kwargs['patch_size']
         self.num_patches = self.patch_embed.num_patches
         self.depth = kwargs['depth']
+        self.last_keep_rate = 1.0
 
         block_depth = self.depth
         block_index_max = self.depth-1
@@ -164,8 +165,9 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
         x,keep_rate = self.forward_features(x, keep_rate, random_keep_rate)
         x = self.pre_logits(x[:, 0])
         x = self.head(x)
+        self.last_keep_rate = keep_rate
 
-        return x,keep_rate
+        return x
 
 def _init_vit_weights(module: nn.Module, name: str = '', head_bias: float = 0., jax_impl: bool = False):
     """ ViT weight initialization

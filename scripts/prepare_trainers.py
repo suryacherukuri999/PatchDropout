@@ -16,195 +16,128 @@ import time
 import matplotlib.pyplot as plt
 import subprocess
 
+# 
+
 class MetricsTracker:
     def __init__(self, output_dir):
         self.output_dir = output_dir
-        self.memory_usage = []
-        self.cpu_memory_usage = []  # Added for CPU memory tracking
-        self.iteration_times = []
-        self.iterations = []
+        self.memory_usage = []  # NVIDIA-SMI reported memory
         self.keep_rates = []
-        self.MB = 1024.0 * 1024.0
         self.start_time = None
+        self.epoch_start_time = time.time()  # Start time for the epoch
         
     def start_iteration(self):
         """Call at the start of each iteration to record start time"""
         self.start_time = time.time()
-        #torch.cuda.reset_peak_memory_stats()  # Reset peak memory stats for this iteration
-        torch.cuda.empty_cache()
+        torch.cuda.empty_cache()  # This is needed but doesn't use PyTorch memory APIs
         
     def end_iteration(self, iteration, keep_rate):
         """Call at the end of each iteration to record metrics"""
         if self.start_time is None:
             return
             
-        # Record iteration time
-        iter_time = time.time() - self.start_time
-        self.iteration_times.append(iter_time)
-        
-        # Record GPU memory usage
+        # Get nvidia-smi reported memory only
         try:
             result = subprocess.check_output(
                 ['nvidia-smi', '--query-gpu=memory.used', '--format=csv,nounits,noheader'],
                 encoding='utf-8')
-            # Parse the output to get the memory used for GPU 1
+            # Parse the output to get the memory used
             memory_values = [int(x) for x in result.strip().split('\n')]
-            memory_used = memory_values[1] if len(memory_values) > 1 else memory_values[0]  # Use GPU 1 if available
+            nvidia_mem = memory_values[1] if len(memory_values) > 1 else memory_values[0]  # Use GPU 1 if available
         except (subprocess.SubprocessError, IndexError) as e:
             print(f"Error getting GPU memory: {e}")
-            memory_used = 0
+            nvidia_mem = 0
 
-        self.memory_usage.append(memory_used)
-        
-        # Record CPU memory usage - fixed implementation
-        try:
-            # Get process ID of our Python process
-            import os
-            pid = os.getpid()
-            print("surya process" + str(pid))
-            # The '=' after 'rss' ensures that no header is printed.
-            result = subprocess.check_output(
-                ['ps', '-p', str(pid), '-o', 'rss='],
-                encoding='utf-8')
-            mem_kb = float(result.strip())
-            cpu_memory_used = mem_kb / 1024.0  # Convert from KB to MB
-            
-        except (subprocess.SubprocessError, ValueError, IndexError) as e:
-            print(f"Error getting CPU memory: {e}")
-            cpu_memory_used = 0
-            
-        self.cpu_memory_usage.append(cpu_memory_used)
-        
-        # Record iteration number and keep rate
-        self.iterations.append(iteration)
+        self.memory_usage.append(nvidia_mem)
         self.keep_rates.append(keep_rate)
 
-        print(f"Iteration {iteration} - Time: {iter_time:.4f}s, GPU Memory: {memory_used:.2f}MB, CPU Memory: {cpu_memory_used:.2f}MB, Keep Rate: {keep_rate:.2f}")
-
-        # Save metrics to CSV after each iteration to ensure data is not lost
-        self.save_metrics_to_csv(iteration)
+        print(f"Iteration {iteration} - GPU Memory: {nvidia_mem:.2f}MB, Keep Rate: {keep_rate:.2f}")
         
         self.start_time = None
+    
+    def report_statistics(self, epoch):
+        """Report memory statistics at the end of the epoch"""
+        # Calculate execution time
+        total_time = time.time() - self.epoch_start_time
+        hours, remainder = divmod(total_time, 3600)
+        minutes, seconds = divmod(remainder, 60)
         
-    def save_metrics_to_csv(self, current_iteration):
-        """Save metrics to CSV file after each iteration"""
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
+        # Calculate memory statistics
+        if self.memory_usage:
+            max_mem = max(self.memory_usage)
+            mean_mem = sum(self.memory_usage) / len(self.memory_usage)
+            std_mem = (sum((x - mean_mem)**2 for x in self.memory_usage) / len(self.memory_usage))**0.5
             
-        # Create a DataFrame with just the latest metrics
-        import pandas as pd
-        latest_df = pd.DataFrame({
-            'iteration': [self.iterations[-1]],
-            'gpu_memory_mb': [self.memory_usage[-1]],
-            'cpu_memory_mb': [self.cpu_memory_usage[-1]],  
-            'time_seconds': [self.iteration_times[-1]],
-            'keep_rate': [self.keep_rates[-1]]
-        })
-        
-        # Define the CSV file path
-        csv_path = os.path.join(self.output_dir, f'metrics_realtime.csv')
-        
-        # If file doesn't exist, create it with header
-        # If it exists, append without header
-        if not os.path.exists(csv_path):
-            latest_df.to_csv(csv_path, index=False)
-        else:
-            latest_df.to_csv(csv_path, mode='a', header=False, index=False)
-        
-    def plot_metrics(self, epoch):
-        """Generate plots for the collected metrics"""
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
+            # Print statistics
+            print("\n" + "="*50)
+            print("EPOCH STATISTICS")
+            print("="*50)
+            print(f"Total Execution Time: {int(hours)}h {int(minutes)}m {seconds:.2f}s")
+            print(f"Max Memory: {max_mem:.2f}MB")
+            print(f"Mean Memory: {mean_mem:.2f}MB")
+            print(f"Std Dev Memory: {std_mem:.2f}MB")
             
-        # Plot GPU memory usage
-        plt.figure(figsize=(10, 6))
-        plt.plot(self.iterations, self.memory_usage)
-        plt.title(f'GPU Memory Usage - Epoch {epoch}')
-        plt.xlabel('Iteration')
-        plt.ylabel('GPU Memory Used (MB)')
-        plt.xlim(0, max(self.iterations) if self.iterations else 100)  # Start x-axis from 0
-        plt.ylim(0, max(self.memory_usage) * 1.1 if self.memory_usage else 1000)  # Start y-axis from 0
-        plt.grid(True)
-        plt.savefig(os.path.join(self.output_dir, f'gpu_memory_usage_epoch_{epoch}.png'))
-        plt.close()
+            # Save statistics to file
+            if not os.path.exists(self.output_dir):
+                os.makedirs(self.output_dir)
+                
+            stats_path = os.path.join(self.output_dir, f'memory_stats_epoch_{epoch}.txt')
+            with open(stats_path, 'w') as f:
+                f.write("="*50 + "\n")
+                f.write("EPOCH STATISTICS\n")
+                f.write("="*50 + "\n")
+                f.write(f"Total Execution Time: {int(hours)}h {int(minutes)}m {seconds:.2f}s\n")
+                f.write(f"Max Memory: {max_mem:.2f}MB\n")
+                f.write(f"Mean Memory: {mean_mem:.2f}MB\n")
+                f.write(f"Std Dev Memory: {std_mem:.2f}MB\n\n")
+                
+                # Add memory statistics by keep rate
+                f.write("Memory Usage by Keep Rate:\n")
+                
+                # Group memory by keep rate (rounded to 2 decimal places)
+                keep_rate_to_mem = {}
+                for kr, mem in zip(self.keep_rates, self.memory_usage):
+                    kr_rounded = round(kr, 2)
+                    if kr_rounded not in keep_rate_to_mem:
+                        keep_rate_to_mem[kr_rounded] = []
+                    keep_rate_to_mem[kr_rounded].append(mem)
+                
+                # Calculate statistics for each keep rate
+                for kr in sorted(keep_rate_to_mem.keys()):
+                    mem_values = keep_rate_to_mem[kr]
+                    avg_mem = sum(mem_values) / len(mem_values)
+                    max_mem_kr = max(mem_values)
+                    f.write(f"Keep Rate {kr}: Avg Memory: {avg_mem:.2f}MB, Max Memory: {max_mem_kr:.2f}MB, Samples: {len(mem_values)}\n")
+            
+            # Save as CSV too for easy parsing
+            import pandas as pd
+            stats_df = pd.DataFrame({
+                'metric': ['total_time_seconds', 'max_memory_mb', 'mean_memory_mb', 'std_memory_mb'],
+                'value': [total_time, max_mem, mean_mem, std_mem]
+            })
+            stats_df.to_csv(os.path.join(self.output_dir, f'memory_stats_epoch_{epoch}.csv'), index=False)
+            
+            # Also save keep rate specific data
+            keep_rate_data = []
+            for kr in sorted(keep_rate_to_mem.keys()):
+                mem_values = keep_rate_to_mem[kr]
+                avg_mem = sum(mem_values) / len(mem_values)
+                max_mem_kr = max(mem_values)
+                keep_rate_data.append({
+                    'keep_rate': kr,
+                    'avg_memory_mb': avg_mem,
+                    'max_memory_mb': max_mem_kr,
+                    'samples': len(mem_values)
+                })
+            
+            if keep_rate_data:
+                kr_df = pd.DataFrame(keep_rate_data)
+                kr_df.to_csv(os.path.join(self.output_dir, f'memory_by_keep_rate_epoch_{epoch}.csv'), index=False)
         
-        # Plot CPU memory usage
-        plt.figure(figsize=(10, 6))
-        plt.plot(self.iterations, self.cpu_memory_usage)
-        plt.title(f'CPU Memory Usage - Epoch {epoch}')
-        plt.xlabel('Iteration')
-        plt.ylabel('CPU Memory Used (MB)')
-        plt.xlim(0, max(self.iterations) if self.iterations else 100)  # Start x-axis from 0
-        plt.ylim(0, max(self.cpu_memory_usage) * 1.1 if self.cpu_memory_usage else 1000)  # Start y-axis from 0
-        plt.grid(True)
-        plt.savefig(os.path.join(self.output_dir, f'cpu_memory_usage_epoch_{epoch}.png'))
-        plt.close()
-        
-        # Plot iteration times
-        plt.figure(figsize=(10, 6))
-        plt.plot(self.iterations, self.iteration_times)
-        plt.title(f'Iteration Times - Epoch {epoch}')
-        plt.xlabel('Iteration')
-        plt.ylabel('Time (s)')
-        plt.xlim(0, max(self.iterations) if self.iterations else 100)  # Start x-axis from 0
-        plt.ylim(0, max(self.iteration_times) * 1.1 if self.iteration_times else 10)  # Start y-axis from 0
-        plt.grid(True)
-        plt.savefig(os.path.join(self.output_dir, f'iteration_times_epoch_{epoch}.png'))
-        plt.close()
-        
-        # Plot keep rates
-        plt.figure(figsize=(10, 6))
-        plt.plot(self.iterations, self.keep_rates)
-        plt.title(f'Keep Rates - Epoch {epoch}')
-        plt.xlabel('Iteration')
-        plt.ylabel('Keep Rate')
-        plt.xlim(0, max(self.iterations) if self.iterations else 100)  # Start x-axis from 0
-        plt.ylim(0, 1.1)  # Keep rate is between 0 and 1
-        plt.grid(True)
-        plt.savefig(os.path.join(self.output_dir, f'keep_rates_epoch_{epoch}.png'))
-        plt.close()
-        
-        # Plot memory vs keep rate scatter for GPU
-        plt.figure(figsize=(10, 6))
-        plt.scatter(self.keep_rates, self.memory_usage, alpha=0.6)
-        plt.title(f'GPU Memory Usage vs Keep Rate - Epoch {epoch}')
-        plt.xlabel('Keep Rate')
-        plt.ylabel('GPU Memory Used (MB)')
-        plt.xlim(0, 1.1)  # Keep rate is between 0 and 1
-        plt.ylim(0, max(self.memory_usage) * 1.1 if self.memory_usage else 1000)  # Start y-axis from 0
-        plt.grid(True)
-        plt.savefig(os.path.join(self.output_dir, f'gpu_memory_vs_keep_rate_epoch_{epoch}.png'))
-        plt.close()
-        
-        # Plot memory vs keep rate scatter for CPU
-        plt.figure(figsize=(10, 6))
-        plt.scatter(self.keep_rates, self.cpu_memory_usage, alpha=0.6)
-        plt.title(f'CPU Memory Usage vs Keep Rate - Epoch {epoch}')
-        plt.xlabel('Keep Rate')
-        plt.ylabel('CPU Memory Used (MB)')
-        plt.xlim(0, 1.1)  # Keep rate is between 0 and 1
-        plt.ylim(0, max(self.cpu_memory_usage) * 1.1 if self.cpu_memory_usage else 1000)  # Start y-axis from 0
-        plt.grid(True)
-        plt.savefig(os.path.join(self.output_dir, f'cpu_memory_vs_keep_rate_epoch_{epoch}.png'))
-        plt.close()
-        
-        # Save all metrics to epoch-specific CSV
-        import pandas as pd
-        df = pd.DataFrame({
-            'iteration': self.iterations,
-            'gpu_memory_mb': self.memory_usage,
-            'cpu_memory_mb': self.cpu_memory_usage,
-            'time_seconds': self.iteration_times,
-            'keep_rate': self.keep_rates
-        })
-        df.to_csv(os.path.join(self.output_dir, f'metrics_epoch_{epoch}.csv'), index=False)
-        
-        # Reset for next epoch
+        # Reset for potential next epoch
         self.memory_usage = []
-        self.cpu_memory_usage = []
-        self.iteration_times = []
-        self.iterations = []
         self.keep_rates = []
+        self.epoch_start_time = time.time()  # Reset timer for next epoch
 
 def train_for_image_one_epoch(rank, epoch, num_epochs,
                               model, defined_loss, data_loader,
@@ -216,7 +149,7 @@ def train_for_image_one_epoch(rank, epoch, num_epochs,
     count = 0
     model.train()
 
-    metrics_output_dir = "/home/saisurya/data/surya_varrate_variable"
+    metrics_output_dir = "/home/cc/data/surya_varrate_variable"
     metrics_tracker = MetricsTracker(metrics_output_dir)
 
     if rank == 0:
@@ -242,7 +175,10 @@ def train_for_image_one_epoch(rank, epoch, num_epochs,
         # Model forward passes + compute the loss
         fp16_scaler = None
         with torch.cuda.amp.autocast(fp16_scaler is not None):
-            x,keep_rate = model(rank, images, keep_rate, random_keep_rate)  # x: logits right after the fc layer
+           # x,keep_rate = model(rank, images, keep_rate, random_keep_rate)  # x: logits right after the fc layer
+            x = model(rank, images, keep_rate, random_keep_rate)
+            keep_rate = model.module.last_keep_rate if hasattr(model, 'module') else model.last_keep_rate
+
             loss = defined_loss['classification_loss'](x, labels)
 
         if rank == 0:
@@ -293,7 +229,7 @@ def train_for_image_one_epoch(rank, epoch, num_epochs,
                 count += 1
 
     if rank == 0:
-        metrics_tracker.plot_metrics(epoch)
+        metrics_tracker.report_statistics(epoch)
 
     # Gather the stats from all processes
     metric_logger.synchronize_between_processes()
